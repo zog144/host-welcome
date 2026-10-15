@@ -1,0 +1,56 @@
+{
+  "schema_version": "host-welcome.readiness/v1",
+  "source_kind": "fixture",
+  "observed_at": "2026-10-15T12:00:00Z",
+  "host_label": "Skiff's Zog host · ready scenario",
+  "observations": {
+    "installation": {
+      "status": "verified",
+      "summary": "Installation records verified",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://ready/installation"
+    },
+    "state_integrity": {
+      "status": "verified",
+      "summary": "Protected STATE checks passed",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://ready/state_integrity"
+    },
+    "host_identity": {
+      "status": "verified",
+      "summary": "Existing host identity recognized",
+      "producer": "fixture/host-identify",
+      "evidence_ref": "fixture://ready/host_identity"
+    },
+    "enrollment": {
+      "status": "verified",
+      "summary": "Enrollment authorization verified",
+      "producer": "fixture/station-access",
+      "evidence_ref": "fixture://ready/enrollment"
+    },
+    "network": {
+      "status": "verified",
+      "summary": "Network connectivity verified",
+      "producer": "fixture/network-probe",
+      "evidence_ref": "fixture://ready/network"
+    },
+    "configuration": {
+      "status": "verified",
+      "summary": "Required configuration verified",
+      "producer": "fixture/host-config",
+      "evidence_ref": "fixture://ready/configuration"
+    },
+    "station_access": {
+      "status": "verified",
+      "summary": "Station access service verified",
+      "producer": "fixture/station-access",
+      "evidence_ref": "fixture://ready/station_access"
+    },
+    "recovery": {
+      "status": "verified",
+      "summary": "No recovery action indicated",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://ready/recovery"
+    }
+  }
+}

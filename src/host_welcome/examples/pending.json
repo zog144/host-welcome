@@ -1,0 +1,56 @@
+{
+  "schema_version": "host-welcome.readiness/v1",
+  "source_kind": "fixture",
+  "observed_at": "2026-10-15T12:00:00Z",
+  "host_label": "Skiff's Zog host · pending scenario",
+  "observations": {
+    "installation": {
+      "status": "verified",
+      "summary": "Installation records verified",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://pending/installation"
+    },
+    "state_integrity": {
+      "status": "verified",
+      "summary": "Protected STATE checks passed",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://pending/state_integrity"
+    },
+    "host_identity": {
+      "status": "verified",
+      "summary": "Existing host identity recognized",
+      "producer": "fixture/host-identify",
+      "evidence_ref": "fixture://pending/host_identity"
+    },
+    "enrollment": {
+      "status": "pending",
+      "summary": "Awaiting authorized enrollment",
+      "producer": "fixture/station-access",
+      "evidence_ref": null
+    },
+    "network": {
+      "status": "verified",
+      "summary": "Network connectivity verified",
+      "producer": "fixture/network-probe",
+      "evidence_ref": "fixture://pending/network"
+    },
+    "configuration": {
+      "status": "verified",
+      "summary": "Required configuration verified",
+      "producer": "fixture/host-config",
+      "evidence_ref": "fixture://pending/configuration"
+    },
+    "station_access": {
+      "status": "pending",
+      "summary": "Waiting for station-access",
+      "producer": "fixture/station-access",
+      "evidence_ref": null
+    },
+    "recovery": {
+      "status": "verified",
+      "summary": "No recovery action indicated",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://pending/recovery"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": "host-welcome.readiness/v1",
+  "source_kind": "fixture",
+  "observed_at": "2026-10-15T12:00:00Z",
+  "host_label": "Skiff's Zog host · offline scenario",
+  "observations": {
+    "installation": {
+      "status": "verified",
+      "summary": "Installation records verified",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://offline/installation"
+    },
+    "state_integrity": {
+      "status": "verified",
+      "summary": "Protected STATE checks passed",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://offline/state_integrity"
+    },
+    "host_identity": {
+      "status": "verified",
+      "summary": "Existing host identity recognized",
+      "producer": "fixture/host-identify",
+      "evidence_ref": "fixture://offline/host_identity"
+    },
+    "enrollment": {
+      "status": "pending",
+      "summary": "Enrollment not yet authorized",
+      "producer": "fixture/station-access",
+      "evidence_ref": null
+    },
+    "network": {
+      "status": "degraded",
+      "summary": "Network unavailable",
+      "producer": "fixture/network-probe",
+      "evidence_ref": null
+    },
+    "configuration": {
+      "status": "verified",
+      "summary": "Required configuration verified",
+      "producer": "fixture/host-config",
+      "evidence_ref": "fixture://offline/configuration"
+    },
+    "station_access": {
+      "status": "unknown",
+      "summary": "Service reachability not observed",
+      "producer": "fixture/station-access",
+      "evidence_ref": null
+    },
+    "recovery": {
+      "status": "verified",
+      "summary": "No recovery action indicated",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://offline/recovery"
+    }
+  }
+}

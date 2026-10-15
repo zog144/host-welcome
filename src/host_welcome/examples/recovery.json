@@ -1,0 +1,56 @@
+{
+  "schema_version": "host-welcome.readiness/v1",
+  "source_kind": "fixture",
+  "observed_at": "2026-10-15T12:00:00Z",
+  "host_label": "Skiff's Zog host · recovery scenario",
+  "observations": {
+    "installation": {
+      "status": "verified",
+      "summary": "Installation records verified",
+      "producer": "fixture/host-install",
+      "evidence_ref": "fixture://recovery/installation"
+    },
+    "state_integrity": {
+      "status": "failed",
+      "summary": "Protected STATE integrity check failed",
+      "producer": "fixture/host-install",
+      "evidence_ref": null
+    },
+    "host_identity": {
+      "status": "verified",
+      "summary": "Existing host identity recognized",
+      "producer": "fixture/host-identify",
+      "evidence_ref": "fixture://recovery/host_identity"
+    },
+    "enrollment": {
+      "status": "unknown",
+      "summary": "Enrollment status unavailable",
+      "producer": "fixture/station-access",
+      "evidence_ref": null
+    },
+    "network": {
+      "status": "verified",
+      "summary": "Network connectivity verified",
+      "producer": "fixture/network-probe",
+      "evidence_ref": "fixture://recovery/network"
+    },
+    "configuration": {
+      "status": "pending",
+      "summary": "Configuration cannot continue",
+      "producer": "fixture/host-config",
+      "evidence_ref": null
+    },
+    "station_access": {
+      "status": "verified",
+      "summary": "Station access service verified",
+      "producer": "fixture/station-access",
+      "evidence_ref": "fixture://recovery/station_access"
+    },
+    "recovery": {
+      "status": "failed",
+      "summary": "Recovery investigation required",
+      "producer": "fixture/host-install",
+      "evidence_ref": null
+    }
+  }
+}

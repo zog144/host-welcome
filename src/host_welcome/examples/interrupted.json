@@ -1,0 +1,56 @@
+{
+  "schema_version": "host-welcome.readiness/v1",
+  "source_kind": "fixture",
+  "observed_at": "2026-10-15T12:00:00Z",
+  "host_label": "Skiff's Zog host · interrupted scenario",
+  "observations": {
+    "installation": {
+      "status": "pending",
+      "summary": "Interrupted installation requires inspection",
+      "producer": "fixture/host-install",
+      "evidence_ref": null
+    },
+    "state_integrity": {
+      "status": "unknown",
+      "summary": "Protected STATE evidence unavailable",
+      "producer": "fixture/host-install",
+      "evidence_ref": null
+    },
+    "host_identity": {
+      "status": "verified",
+      "summary": "Existing host identity recognized",
+      "producer": "fixture/host-identify",
+      "evidence_ref": "fixture://interrupted/host_identity"
+    },
+    "enrollment": {
+      "status": "verified",
+      "summary": "Enrollment authorization verified",
+      "producer": "fixture/station-access",
+      "evidence_ref": "fixture://interrupted/enrollment"
+    },
+    "network": {
+      "status": "verified",
+      "summary": "Network connectivity verified",
+      "producer": "fixture/network-probe",
+      "evidence_ref": "fixture://interrupted/network"
+    },
+    "configuration": {
+      "status": "pending",
+      "summary": "Configuration blocked pending inspection",
+      "producer": "fixture/host-config",
+      "evidence_ref": null
+    },
+    "station_access": {
+      "status": "verified",
+      "summary": "Station access service verified",
+      "producer": "fixture/station-access",
+      "evidence_ref": "fixture://interrupted/station_access"
+    },
+    "recovery": {
+      "status": "degraded",
+      "summary": "Preserve interrupted-operation evidence",
+      "producer": "fixture/host-install",
+      "evidence_ref": null
+    }
+  }
+}
