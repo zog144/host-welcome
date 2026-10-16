@@ -13,6 +13,7 @@ dependencies = []
 host-welcome = "host_welcome.cli:main"
 host-welcome-kiosk = "host_welcome.kiosk:main"
 host-welcome-previews = "host_welcome.previews:main"
+host-welcome-progress = "host_welcome.progress_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

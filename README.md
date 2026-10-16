@@ -73,3 +73,21 @@ Artifact bundles are generated entirely on GitHub Actions. They are **review/dem
 A real launch requires an existing X11/Wayland session and installed browser, runs under the invoking non-root user, and uses a dedicated temporary browser profile. The browser receives a local `file://` URL, never a remote endpoint. The launcher waits for the browser to exit and removes temporary files afterward. It refuses root, unsupported platforms, missing displays and missing browsers rather than silently installing packages or disabling the browser sandbox. `host-welcome` console mode remains independently available.
 
 The kiosk is **not a security boundary** or an installer/enrollment UI. A display manager and compositor/session supervisor would eventually own kiosk confinement and process lifecycle. The launcher currently renders simulation inputs only.
+
+## Simulation-first application progress (Handoff F / Phase 1)
+
+Use the separate dependency-free console tool to inspect representative post-install progress without launching builds or inspecting protected host state:
+
+```sh
+host-welcome-progress --scenario building
+host-welcome-progress --scenario blocked
+host-welcome-progress --scenario uncertain
+host-welcome-progress --scenario published
+host-welcome-progress --scenario headless
+host-welcome-progress --scenario unavailable
+host-welcome-progress --scenario building --format json
+```
+
+`host-welcome-progress --input /path/to/fixture.json` accepts **simulation fixtures only**, under `host-welcome.progress-fixture/v1`; no input file can gain live authority. The underlying controller section is the exact validated `zog-application-progress-v1` subset; image-build and installation sections are **local fixture formats, not upstream production schemas**. The console explicitly separates verified headless installation, optional application request intent, phase-limited build outcomes, separately evidenced publication and **unverified** graphical/login readiness. No invented progress percentages, ETA, automatic polling, requested-state inference from empty controller pages, or privilege escalation. See [application-progress contract and tests](docs/application-progress.md).
+
+The production `host-welcome` UID does **not** currently have access to the station-access-only observer socket. The live adapter/authoritative image-build publication join, native systemd and getty acceptance, and greetd privileged PAM/local-seat role remain separate gates.
