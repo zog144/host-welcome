@@ -205,9 +205,11 @@ def load_progress_fixture(data: Any) -> ProgressFixture:
             _enum(op["publication"], {"unobserved", "verified", "failed", "uncertain"}, "image_build.publication")
             _id(op["published_view"], VIEW, "image_build.published_view", nullable=True)
             _id(op["publication_evidence_ref"], TOKEN, "image_build.publication_evidence_ref", nullable=True)
-            if (op["publication"] == "verified") != (
-                    op["published_view"] is not None and op["publication_evidence_ref"] is not None):
-                raise ProgressError("image-build fixture: publication requires its own view and evidence")
+            if op["publication"] == "verified":
+                if op["published_view"] is None or op["publication_evidence_ref"] is None:
+                    raise ProgressError("image-build fixture: publication requires its own view and evidence")
+            elif op["published_view"] is not None or op["publication_evidence_ref"] is not None:
+                raise ProgressError("image-build fixture: unverified publication must not carry a receipt")
             if op["publication"] == "verified" and (op["phase"] != "publishing" or op["state"] != "succeeded"):
                 raise ProgressError("image-build fixture: publication must be independently completed")
     return ProgressFixture(now, install, control, image)

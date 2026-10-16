@@ -99,6 +99,10 @@ class ProgressTests(unittest.TestCase):
         ):
             raw = fixture("published")
             bad(raw)
+            # Keep the controller's own item timestamp consistent with the
+            # envelope; otherwise the validator correctly rejects the input
+            # before the stale/future assessment can be exercised.
+            raw["controller"]["items"][0]["observed_at"] = raw["controller"]["observed_at"]
             result = assess_progress(load_progress_fixture(raw))
             self.assertEqual(result.controller_availability, "unavailable")
             self.assertEqual(result.publication, "unobserved")
