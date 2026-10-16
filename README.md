@@ -14,7 +14,7 @@ host-welcome --scenario pending
 host-welcome --scenario pending --format html --output welcome.html
 host-welcome --scenario recovery --format html --output recovery.html
 host-welcome --scenario ready --format json
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v\n\n# A simulated launcher plan (works without a browser):\nhost-welcome-kiosk --scenario pending --dry-run\n\n# On an unprivileged Linux X11 or Wayland session with Firefox/Chromium installed:\nhost-welcome-kiosk --scenario pending --browser auto\n\n# Generate Windows-friendly offline preview pages:\nhost-welcome-previews --output-dir welcome-previews
 ```
 
 Open `welcome.html` locally in a browser. The standalone HTML has **no network dependencies**: it embeds the pinned pose-animate JavaScript and an SVG fallback for JavaScript-disabled/reduced-motion users. JavaScript is used only for optional character animation, never for status assessment. You can also supply a simulation JSON file with `--input examples/pending.json`.
@@ -49,3 +49,18 @@ python -m unittest discover -s tests -v
 ```
 
  Real host/installer integration and a station-access consumer are intentionally deferred until their read-only producer contracts are approved.
+
+
+## Windows HTML previews (no development tools required)
+
+Open the GitHub repository's **Actions** tab, select **host-welcome checks**, open a successful run on `unstable`, then download the **welcome-html-previews** artifact from **Artifacts**. Unzip it on Windows and double-click `index.html` to choose among five simulated scenarios. Each generated HTML file embeds Skiff animations and a static no-JavaScript SVG fallback. No Python, npm, local HTTP server, internet access or browser extension is needed on the laptop.
+
+Artifact bundles are generated entirely on GitHub Actions. They are **review/demo fixtures only**; the readiness status is not a report from your Windows laptop or a live Zog host.
+
+## Optional graphical kiosk
+
+`host-welcome-kiosk` is an unprivileged Linux launcher. It prefers Firefox (including Firefox ESR), then Chromium. Use `--browser firefox` or `--browser chromium` to require a specific engine; `--browser auto` is the default. `--dry-run` validates the simulated snapshot and prints a command template without checking displays or browser installations.
+
+A real launch requires an existing X11/Wayland session and installed browser, runs under the invoking non-root user, and uses a dedicated temporary browser profile. The browser receives a local `file://` URL, never a remote endpoint. The launcher waits for the browser to exit and removes temporary files afterward. It refuses root, unsupported platforms, missing displays and missing browsers rather than silently installing packages or disabling the browser sandbox. `host-welcome` console mode remains independently available.
+
+The kiosk is **not a security boundary** or an installer/enrollment UI. A display manager and compositor/session supervisor would eventually own kiosk confinement and process lifecycle. The launcher currently renders simulation inputs only.

@@ -74,3 +74,30 @@ jobs:
           python -m host_welcome --scenario pending
           python -m host_welcome --scenario recovery --format html --output /tmp/host-welcome-recovery.html
           python -m host_welcome --scenario ready --format json
+
+  html-previews:
+    name: Offline Windows HTML previews
+    needs: skiff-assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: canonical-skiff-assets
+          path: src/host_welcome/assets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install host-welcome
+        run: python -m pip install -e .
+      - name: Generate standalone pages and index
+        run: |
+          host-welcome-previews --output-dir welcome-previews
+          test -f welcome-previews/index.html
+          test "$(find welcome-previews -maxdepth 1 -name '*.html' | wc -l)" -eq 6
+      - uses: actions/upload-artifact@v4
+        with:
+          name: welcome-html-previews
+          path: welcome-previews/
+          if-no-files-found: error
+          retention-days: 30
