@@ -14,22 +14,22 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Checkout pinned canonical Skiff source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: zog144/pose-animate
           ref: b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a
           path: .pose-source
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Compile pinned renderer
         run: |
           npm install --prefix .pose-source --no-save --no-package-lock typescript@5.8.3
           npm run build --prefix .pose-source
           node scripts/sync-skiff.mjs .pose-source
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: canonical-skiff-assets
           path: |
@@ -57,12 +57,12 @@ jobs:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v7
         with:
           name: canonical-skiff-assets
           path: src/host_welcome/assets
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install package
@@ -80,12 +80,12 @@ jobs:
     needs: skiff-assets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v7
         with:
           name: canonical-skiff-assets
           path: src/host_welcome/assets
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install host-welcome
@@ -95,7 +95,7 @@ jobs:
           host-welcome-previews --output-dir welcome-previews
           test -f welcome-previews/index.html
           test "$(find welcome-previews -maxdepth 1 -name '*.html' | wc -l)" -eq 6
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: welcome-html-previews
           path: welcome-previews/
