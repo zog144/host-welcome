@@ -75,6 +75,12 @@ jobs:
           python -m host_welcome --scenario pending
           python -m host_welcome --scenario recovery --format html --output /tmp/host-welcome-recovery.html
           python -m host_welcome --scenario ready --format json
+          host-welcome-progress --scenario building
+          host-welcome-progress --scenario blocked
+          host-welcome-progress --scenario uncertain
+          host-welcome-progress --scenario published --format json
+          host-welcome-progress --scenario headless
+          host-welcome-progress --scenario unavailable
 
   html-previews:
     name: Offline Windows HTML previews
