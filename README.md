@@ -14,7 +14,16 @@ host-welcome --scenario pending
 host-welcome --scenario pending --format html --output welcome.html
 host-welcome --scenario recovery --format html --output recovery.html
 host-welcome --scenario ready --format json
-python -m unittest discover -s tests -v\n\n# A simulated launcher plan (works without a browser):\nhost-welcome-kiosk --scenario pending --dry-run\n\n# On an unprivileged Linux X11 or Wayland session with Firefox/Chromium installed:\nhost-welcome-kiosk --scenario pending --browser auto\n\n# Generate Windows-friendly offline preview pages:\nhost-welcome-previews --output-dir welcome-previews
+python -m unittest discover -s tests -v
+
+# A simulated launcher plan (works without a browser):
+host-welcome-kiosk --scenario pending --dry-run
+
+# On an unprivileged Linux X11 or Wayland session with Firefox/Chromium installed:
+host-welcome-kiosk --scenario pending --browser auto
+
+# Generate Windows-friendly offline preview pages:
+host-welcome-previews --output-dir welcome-previews
 ```
 
 Open `welcome.html` locally in a browser. The standalone HTML has **no network dependencies**: it embeds the pinned pose-animate JavaScript and an SVG fallback for JavaScript-disabled/reduced-motion users. JavaScript is used only for optional character animation, never for status assessment. You can also supply a simulation JSON file with `--input examples/pending.json`.

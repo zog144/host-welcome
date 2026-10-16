@@ -10,7 +10,9 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-host-welcome = "host_welcome.cli:main"\nhost-welcome-kiosk = "host_welcome.kiosk:main"\nhost-welcome-previews = "host_welcome.previews:main"
+host-welcome = "host_welcome.cli:main"
+host-welcome-kiosk = "host_welcome.kiosk:main"
+host-welcome-previews = "host_welcome.previews:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
