@@ -46,7 +46,27 @@ def render_html(snapshot: Snapshot, assessment: Assessment) -> str:
             f'<span><strong>{escape(LABELS[category])}</strong>'
             f'<small>{escape(item.summary)}</small></span></li>'
         )
-    skiff = files("host_welcome").joinpath("assets/skiff.svg").read_text(encoding="utf-8")
+    # Assets are reproducibly compiled from the pinned pose-animate revision,
+    # never redrawn or independently posed by host-welcome.
+    skiff_state = {
+        "ready": "ready",
+        "setup_pending": "waiting",
+        "unknown": "thinking",
+        "degraded": "warning",
+        "attention": "error",
+    }[assessment.aggregate]
+    assets = files("host_welcome").joinpath("assets")
+    skiff = assets.joinpath(f"skiff-{assessment.aggregate}.svg").read_text(encoding="utf-8")
+    skiff_runtime = assets.joinpath("pose_animate.js").read_text(encoding="utf-8")
+    # The state name is selected from the fixed mapping above, not user input.
+    skiff_script = (
+        '<script type="module">\n'
+        + skiff_runtime
+        + '\nconst container=document.getElementById("skiff-stage");\n'
+        + 'const skiff=createSkiff(container,{reducedMotion:"auto"});\n'
+        + f'skiff.setState("{skiff_state}");\n'
+        + '</script>'
+    )
     demo = '<div class="demo" role="note">SIMULATED EXAMPLE · NO LIVE HOST CONNECTION</div>' if snapshot.source_kind == "fixture" else ""
     css = """
 :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
@@ -55,7 +75,7 @@ main{max-width:1160px;margin:auto;padding:30px 26px 22px}.bar{display:flex;justi
 .brand{font-size:20px;font-weight:900;letter-spacing:2px}.brand span{display:block;font-size:10px;color:#a0cbe0;letter-spacing:2px;font-weight:600}
 .tag{border:1px solid #44708c;color:#b3d5ea;border-radius:25px;padding:9px 13px;font-size:11px;letter-spacing:1px}
 .layout{display:grid;grid-template-columns:1fr 1fr;gap:42px;align-items:center;padding:38px 0}
-.welcome{text-align:center}.mascot{max-width:440px;width:95%;height:auto;filter:drop-shadow(0 15px 20px #0005);animation:bob 5s ease-in-out infinite}
+.welcome{text-align:center}.mascot{max-width:440px;width:95%;height:auto;filter:drop-shadow(0 15px 20px #0005);margin:auto}.mascot svg{display:block;width:100%;height:auto;image-rendering:pixelated}
 .eyebrow{font-size:11px;color:#a0ebfc;font-weight:800;letter-spacing:2.5px}
 h1{font-size:clamp(32px,4vw,54px);line-height:1.1;letter-spacing:-1.8px;margin:18px 0;color:#fff}
 .welcome p{font-size:16px;color:#b8d6ea;line-height:1.7;max-width:400px;margin:0 auto}
@@ -73,7 +93,7 @@ h2{font-size:27px;margin:21px 0 5px}.intro{color:#b1cee2;font-size:13px;line-hei
 .next b{display:block;font-size:10px;letter-spacing:1px;color:#8de7fa;margin-bottom:5px}
 .next span{font-size:12px;line-height:1.6}.demo{font-size:11px;font-weight:800;color:#ffd59c;border:1px solid #9c7140;border-radius:7px;padding:12px 16px;text-align:center;letter-spacing:1px}
 footer{border-top:1px solid #315873;padding-top:18px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:#92bcd6;font-size:11px}
-@keyframes bob{50%{transform:translateY(-7px)}}@media(prefers-reduced-motion:reduce){.mascot{animation:none}}
+@media(prefers-reduced-motion:reduce){.mascot{animation:none}}
 @media(max-width:750px){.layout{grid-template-columns:1fr;gap:16px;padding:15px 0 25px}.mascot{max-width:285px}.panel{padding:17px}main{padding:20px 16px}}
 """
     return (
@@ -83,7 +103,7 @@ footer{border-top:1px solid #315873;padding-top:18px;display:flex;justify-conten
         '<main><header class="bar"><div class="brand">ZOG<span>HOST-WELCOME</span></div>'
         '<div class="tag">✦ FIRST BOOT</div></header>'
         '<div class="layout"><section class="welcome" aria-labelledby="welcome-title">'
-        '<div class="mascot" role="img" aria-label="Skiff, the eight-tentacled blue pixel octopus">' + skiff + '</div>'
+        '<div id="skiff-stage" class="mascot" role="img" aria-label="Skiff, the eight-tentacled blue pixel octopus">' + skiff + '</div>'
         '<div class="eyebrow">✦ A NEW BEGINNING</div><h1 id="welcome-title">' + escape(title) + '</h1>'
         '<p>Hi, I\'m Skiff! I\'ll help you find your way while your machine gets ready.</p></section>'
         '<section class="panel" aria-labelledby="status-title"><div class="panel-top">HOST READINESS'
@@ -93,5 +113,5 @@ footer{border-top:1px solid #315873;padding-top:18px;display:flex;justify-conten
         '<div class="next"><b>WHAT THIS MEANS</b><span>' + escape(assessment.reason) +
         '</span></div></section></div>' + demo +
         '<footer><span>✧ Made for curious explorers</span>'
-        '<span>Read-only · host-welcome v1</span></footer></main></body></html>'
+        '<span>Read-only · host-welcome v1</span></footer></main>' + skiff_script + '</body></html>'
     )

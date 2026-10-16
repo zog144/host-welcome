@@ -25,6 +25,24 @@ class ModelTests(unittest.TestCase):
                 self.assertIn("SIMULATED EXAMPLE", render_console(snapshot, assess(snapshot)))
                 self.assertIn("SIMULATED EXAMPLE", render_html(snapshot, assess(snapshot)))
 
+    def test_upstream_pose_presentation_is_status_driven(self):
+        mapping = {
+            "ready": ("ready", "ready"),
+            "pending": ("setup_pending", "waiting"),
+            "offline": ("degraded", "warning"),
+            "recovery": ("attention", "error"),
+            "interrupted": ("degraded", "warning"),
+        }
+        for scenario, (aggregate, state) in mapping.items():
+            with self.subTest(scenario=scenario):
+                snapshot = load_snapshot(fixture(scenario))
+                html = render_html(snapshot, assess(snapshot))
+                self.assertIn(f'skiff.setState("{state}")', html)
+                self.assertEqual(html.count('id="skiff-limb-0-segment-0"'), 1)
+                self.assertEqual(html.count('id="skiff-limb-7-segment-5"'), 1)
+                self.assertIn('SIMULATED EXAMPLE', html)
+                self.assertIn('reducedMotion:"auto"', html)
+
     def test_fail_closed_on_missing_and_unrecognized_fields(self):
         for alteration in (
             lambda x: x["observations"].pop("recovery"),

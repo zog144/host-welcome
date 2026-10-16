@@ -16,4 +16,4 @@ host-welcome = "host_welcome.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-host_welcome = ["assets/*.svg", "examples/*.json"]
+host_welcome = ["assets/*.svg", "assets/*.js", "examples/*.json"]

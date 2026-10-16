@@ -19,6 +19,7 @@ class CLITests(unittest.TestCase):
                 self.assertTrue(json.loads(out.getvalue())["simulated"])
             elif fmt == "html":
                 self.assertIn("eight-tentacled", out.getvalue())
+                self.assertIn('skiff.setState("waiting")', out.getvalue())
 
     def test_output_file(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -40,3 +40,9 @@ At this milestone the CLI *only* accepts `source_kind: fixture`, including when 
 ## Limitations
 
 This is a design/simulated-test milestone, not bootability verification, proof of secure boot, station enrollment, production read-only adapter, actual HTTPS readiness, or authorization of recovery.
+
+## Canonical mascot integration
+
+The optional browser animation is sourced **only** from `zog144/pose-animate` at pinned commit `b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a`; host-welcome does not invent its own head or limb geometry. The build emits a vendored compiled module and five static SVG fallbacks. The browser calls `createSkiff(...)` and `setState` with a fixed mapping of locally assessed aggregate states. No user-supplied host observation is copied into executable JavaScript. The SVG fallback depicts the exact same semantic presentation from upstream.
+
+State mapping is: ready → ready; setup_pending → waiting; unknown → thinking; degraded → warning; attention → error. Mood remains neutral so errors cannot be overridden by a cheerful preference. Status is still available in ordinary HTML and console text even if animation is disabled. No render-time network access, live host privilege, or JavaScript is required to assess the status.

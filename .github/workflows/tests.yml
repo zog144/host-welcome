@@ -9,14 +9,59 @@ permissions:
   contents: read
 
 jobs:
+  skiff-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned canonical Skiff source
+        uses: actions/checkout@v4
+        with:
+          repository: zog144/pose-animate
+          ref: b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a
+          path: .pose-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile pinned renderer
+        run: |
+          npm install --prefix .pose-source --no-save --no-package-lock typescript@5.8.3
+          npm run build --prefix .pose-source
+          node scripts/sync-skiff.mjs .pose-source
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-skiff-assets
+          path: |
+            src/host_welcome/assets/pose_animate.js
+            src/host_welcome/assets/skiff-ready.svg
+            src/host_welcome/assets/skiff-setup_pending.svg
+            src/host_welcome/assets/skiff-unknown.svg
+            src/host_welcome/assets/skiff-degraded.svg
+            src/host_welcome/assets/skiff-attention.svg
+          if-no-files-found: error
+      - name: Preserve generated assets on unstable
+        if: github.event_name == 'push' && github.ref == 'refs/heads/unstable'
+        run: |
+          git add src/host_welcome/assets/pose_animate.js src/host_welcome/assets/skiff-*.svg
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Sync pinned pose-animate Skiff assets'
+            git push origin HEAD:unstable
+          fi
+
   stdlib-tests:
+    needs: skiff-assets
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: canonical-skiff-assets
+          path: src/host_welcome/assets
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
