@@ -63,8 +63,9 @@ def render_html(snapshot: Snapshot, assessment: Assessment) -> str:
         '<script type="module">\n'
         + skiff_runtime
         + '\nconst container=document.getElementById("skiff-stage");\n'
-        + 'const skiff=createSkiff(container,{reducedMotion:"auto"});\n'
+        + 'const skiff=createSkiffPresenter(container,{palette:"blue",reducedMotion:"auto"});\n'
         + f'skiff.setState("{skiff_state}");\n'
+        + 'window.addEventListener("pagehide",()=>skiff.destroy(),{once:true});\n'
         + '</script>'
     )
     demo = '<div class="demo" role="note">SIMULATED EXAMPLE · NO LIVE HOST CONNECTION</div>' if snapshot.source_kind == "fixture" else ""

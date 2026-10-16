@@ -38,7 +38,7 @@ See [architecture and integration boundaries](docs/architecture.md).
 
 ## Skiff
 
-The web renderer consumes **canonical `pose-animate` geometry and animation** instead of maintaining a separate Skiff drawing. The pinned upstream revision is `b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a` on `zog144/pose-animate`'s `unstable` branch. Its six-square-per-limb topology, joint curl, smaller square head and joined mouth are preserved. `host-welcome` selects the semantic state from assessed host readiness, with a static pose snapshot as a no-JavaScript fallback. The original attached artwork remains the reference; visual approval of the renderer is still in progress. See [provenance](docs/skiff-integration.md).
+The web renderer consumes **canonical `pose-animate` geometry and animation** instead of maintaining a separate Skiff drawing. The pinned upstream revision is `ec5e8986be294a187e4d257df883dccfabea1034` on `zog144/pose-animate`'s `unstable` branch. Its six-square-per-limb topology, joint curl, smaller square head and joined mouth are preserved. `host-welcome` selects the semantic state from assessed host readiness, through the upstream 0.3 presenter API, with a static pose snapshot as a no-JavaScript fallback. The original attached artwork remains the reference; visual approval of the renderer is still in progress. Upstream is an unpublished `0.3.0-rc.0` candidate, licensed **BSD-3-Clause OR GPL-3.0-only** (BSD license text supplied with the generated assets). See [provenance](docs/skiff-integration.md).
 
 ## Development
 
@@ -49,7 +49,7 @@ To refresh locally after an upstream review:
 ```sh
 git clone --branch unstable https://github.com/zog144/pose-animate.git ../pose-animate
 cd ../pose-animate
-git checkout b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a
+git checkout ec5e8986be294a187e4d257df883dccfabea1034
 npm install --no-save --no-package-lock typescript@5.8.3
 npm run build
 cd ../host-welcome
