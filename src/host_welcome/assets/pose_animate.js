@@ -1,5 +1,5 @@
-// Generated from zog144/pose-animate @ b7a6e3bdb15d0a15cc8b8cbc17e295dd472dc57a (package license: MIT)
-// Compiled module SHA-256: c81680338875ae64429a0ac79ae2c9ef933e5d170e8876a0041fe46372274e98
+// Generated from zog144/pose-animate @ ec5e8986be294a187e4d257df883dccfabea1034 (license: BSD-3-Clause OR GPL-3.0-only)
+// Inline renderer + presenter SHA-256: 750b6b82cd5e32f91a8718a50932b276584bdffb9a0b01c37b1750a33061f688
 // Do not hand-edit. Regenerate via scripts/sync-skiff.mjs.
 export const palettes = {
     blue: { body: '#32aae1', dark: '#1675b2', mid: '#1d91cc', light: '#55c8ee', tip: '#8ce5f5', eye: '#102a49', outline: '#123c60' },
@@ -50,9 +50,23 @@ export const poses = {
     greet: pose('happy', [[1, [[8, 1], [9, 0], [10, -1], [10, -2], [9, -3], [9, -4]]]]),
     wave: pose('happy', [[1, [[8, 1], [9, 0], [10, -1], [11, -1], [11, -2], [10, -3]]]]),
     listen: pose('focused', [[2, [[8, 3], [9, 2], [10, 2], [11, 1], [12, 1], [12, 0]]]]),
-    ponder: pose('focused', [[4, [[5, 8], [6, 8], [6, 7], [6, 6], [5.5, 5], [5, 4.1]]]], 4),
+    // Aim at the left of the mouth/chin, not upward at the nose.
+    // These points precede shared curling: the actual resting tip is ~[2.57, 5.64].
+    ponder: pose('focused', [[4, [[5, 8], [5.8, 8], [5.25, 7], [4.7, 6.25], [3.8, 5.85], [3.1, 5.9]]]], 4),
     present: pose('happy', [[2, [[8, 3], [9, 3], [10, 3], [11, 3], [12, 3], [13, 3]]]]),
-    celebrate: pose('happy', [[0, [[-1, 1], [-2, 0], [-3, -1], [-4, -2], [-5, -3], [-6, -4]]], [1, [[8, 1], [9, 0], [10, -1], [11, -2], [12, -3], [13, -4]]], [6, [[0, 8], [-1, 9], [-2, 10], [-3, 11], [-4, 12], [-5, 13]]]])
+    celebrate: pose('happy', [[0, [[-1, 1], [-2, 0], [-3, -1], [-4, -2], [-5, -3], [-6, -4]]], [1, [[8, 1], [9, 0], [10, -1], [11, -2], [12, -3], [13, -4]]], [6, [[0, 8], [-1, 9], [-2, 10], [-3, 11], [-4, 12], [-5, 13]]]]),
+    droop: pose('concerned', [
+        [0, [[-1, 1], [-2, 2], [-3, 3], [-3, 4], [-3, 5], [-2, 6]]],
+        [1, [[8, 1], [9, 2], [10, 3], [10, 4], [10, 5], [9, 6]]],
+        [2, [[8, 3], [9, 4], [10, 5], [11, 6], [11, 7], [11, 8]]],
+        [7, [[-1, 4], [-2, 5], [-3, 6], [-4, 7], [-4, 8], [-4, 9]]]
+    ]),
+    recover: pose('happy', [
+        [0, [[-1, 1], [-2, 0], [-3, -1], [-3, -2], [-2, -3], [-1, -4]]],
+        [1, [[8, 1], [9, 0], [10, -1], [10, -2], [9, -3], [8, -4]]],
+        [2, [[8, 3], [9, 2], [10, 1], [11, 0], [12, 0], [13, -1]]],
+        [7, [[-1, 4], [-2, 3], [-3, 2], [-4, 1], [-5, 0], [-5, -1]]]
+    ])
 };
 export function validatePose(p) {
     if (p.limbs.length !== 8 || p.limbs.some(l => l.length !== 6))
@@ -89,6 +103,12 @@ export function samplePose(name, seconds = 0, motion = true) {
         const delay = j * .16; // wave arrives later at the tip
         const small = .07 * reach * wave(.18, i * .8 + delay);
         let dx = small, dy = .025 * reach * wave(.2, i * .9 + delay);
+        // A transverse wave propagates down the arm without rotating any squares.
+        const [ax, ay] = limb[0];
+        const length = Math.hypot(x - ax, y - ay) || 1;
+        const transverse = .085 * reach * wave(.42, i * .52 + delay * 1.8);
+        dx += -(y - ay) / length * transverse;
+        dy += (x - ax) / length * transverse;
         switch (name) {
             case 'greet':
                 if (i === 1) {
@@ -127,9 +147,10 @@ export function samplePose(name, seconds = 0, motion = true) {
                 }
                 break;
             case 'ponder':
+                // Restrained fingertip movement stays beside Skiff's left chin.
                 if (i === 4) {
-                    dx -= reach * (.45 + .75 * wave(.43, delay));
-                    dy -= reach * .45 * wave(.43, delay + .8);
+                    dx += reach * .22 * wave(.43, delay);
+                    dy += reach * .14 * wave(.43, delay + .8);
                 }
                 if (i === 5) {
                     dx += reach * .34 * wave(.43, delay + 1);
@@ -162,6 +183,15 @@ export function samplePose(name, seconds = 0, motion = true) {
                     dy -= reach * .35 * wave(1.15, delay + i);
                 }
                 break;
+            case 'droop':
+                dy += reach * .07 * wave(.2, delay + i * .5);
+                break;
+            case 'recover':
+                if ([0, 1, 2, 7].includes(i)) {
+                    dy -= reach * (.22 + .43 * wave(.85, delay));
+                    dx += (i === 0 || i === 7 ? -1 : 1) * reach * .20 * wave(.85, delay + .5);
+                }
+                break;
             case 'idle':
                 // Gentle micro-sway only, with no expressive choreography.
                 break;
@@ -174,6 +204,10 @@ export function samplePose(name, seconds = 0, motion = true) {
         headBob = .07 * wave(.32);
     if (name === 'celebrate')
         headBob = -.25 - .38 * wave(1.15);
+    if (name === 'droop')
+        headBob = .2 + .04 * wave(.2);
+    if (name === 'recover')
+        headBob = -.12 - .18 * wave(.85);
     const tick = Math.floor(time * 12);
     let expression = base.face;
     if (tick % 79 === 42 || tick % 79 === 43)
@@ -287,7 +321,8 @@ const statePresets = {
     working: { pose: 'ponder', face: 'focused', pulse: 'inward' },
     'output-ready': { pose: 'present', face: 'happy', pulse: 'outward' },
     waiting: { pose: 'listen', face: 'open', pulse: 'none' },
-    'connection-interrupted': { pose: 'ponder', face: 'concerned', pulse: 'none' },
+    'connection-interrupted': { pose: 'droop', face: 'concerned', pulse: 'none' },
+    recovering: { pose: 'recover', face: 'focused', pulse: 'outward' },
     warning: { pose: 'listen', face: 'concerned', pulse: 'none' },
     error: { pose: 'idle', face: 'concerned', pulse: 'none' },
     sleeping: { pose: 'idle', face: 'sleeping', pulse: 'none' }
@@ -306,16 +341,84 @@ export function semanticPresentation(state, mood = 'neutral') {
     const critical = ['connection-interrupted', 'warning', 'error', 'sleeping'].includes(state);
     return { ...result, face: critical || mood === 'neutral' ? result.face : moodFaces[mood] };
 }
+export const skiffSequences = {
+    'request-flow': [
+        { state: 'receiving', label: 'Receiving a request', durationMs: 1300, transitionMs: 400 },
+        { state: 'thinking', label: 'Thinking', durationMs: 1900, transitionMs: 500, mood: 'focused' },
+        { state: 'working', label: 'Working', durationMs: 1700, transitionMs: 450 },
+        { state: 'output-ready', label: 'Presenting the answer', durationMs: 1450, transitionMs: 500 },
+        { state: 'ready', label: 'Ready', durationMs: 900, transitionMs: 350 }
+    ],
+    'connection-recovery': [
+        { state: 'working', label: 'Working normally', durationMs: 1200, transitionMs: 350 },
+        { state: 'connection-interrupted', label: 'Connection interrupted', durationMs: 1900, transitionMs: 600 },
+        { state: 'recovering', label: 'Restoring the connection', durationMs: 1450, transitionMs: 600 },
+        { state: 'ready', label: 'Connection restored', durationMs: 1250, transitionMs: 500 }
+    ],
+    greeting: [
+        { state: 'idle', label: 'Waiting', durationMs: 700, transitionMs: 0 },
+        { state: 'ready', label: 'Greeting', durationMs: 2200, transitionMs: 550 },
+        { state: 'idle', label: 'Settling down', durationMs: 1100, transitionMs: 550 }
+    ]
+};
+export function sequenceDuration(name) {
+    if (!Object.hasOwn(skiffSequences, name))
+        throw new Error('Unknown Skiff sequence');
+    return skiffSequences[name].reduce((total, step) => total + step.durationMs, 0);
+}
+const criticalState = (state) => ['connection-interrupted', 'warning', 'error', 'sleeping'].includes(state);
+/** Pure deterministic timeline sampling, including reduced-motion stage display. */
+export function sampleSequence(name, elapsedMs, motion = true) {
+    const steps = skiffSequences[name];
+    if (!steps)
+        throw new Error('Unknown Skiff sequence');
+    const durationMs = sequenceDuration(name);
+    const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, Math.min(durationMs, elapsedMs)) : 0;
+    let start = 0, index = steps.length - 1;
+    for (let i = 0; i < steps.length; i++) {
+        if (elapsed < start + steps[i].durationMs) {
+            index = i;
+            break;
+        }
+        start += steps[i].durationMs;
+    }
+    if (elapsed >= durationMs)
+        start = durationMs - steps[index].durationMs;
+    const step = steps[index];
+    const local = Math.min(step.durationMs, elapsed - start);
+    const current = semanticPresentation(step.state, step.mood ?? 'neutral');
+    let pose = samplePose(current.pose, local / 1000, motion);
+    if (index > 0 && motion && step.transitionMs > 0 && local < step.transitionMs) {
+        const previous = steps[index - 1];
+        const previousPreset = semanticPresentation(previous.state, previous.mood ?? 'neutral');
+        const prior = samplePose(previousPreset.pose, previous.durationMs / 1000, motion);
+        pose = sampleTransition(prior, pose, local / step.transitionMs);
+    }
+    // Factual warnings override the interpolated face immediately.
+    pose = { ...pose, face: current.face };
+    return {
+        name, state: step.state, label: step.label, stepIndex: index,
+        elapsedMs: elapsed, durationMs, finished: elapsed >= durationMs,
+        pose, palette: 'blue', pulse: motion ? current.pulse : 'none', phase: elapsed / 1000
+    };
+}
 export const skiffStates = Object.freeze(Object.keys(statePresets));
 export const skiffMoods = Object.freeze(Object.keys(moodFaces));
 /** Uses one RAF loop and exposes a semantic boundary for host-welcome. */
+let nextSkiffInstanceId = 0;
+/** Live SVG IDs are unique per instance; pure renderSvg() baselines remain stable. */
 export function createSkiff(container, options = {}) {
+    const idScope = `skiff-${++nextSkiffInstanceId}-`;
+    const scopedSvg = (frame) => renderSvg(frame)
+        .replaceAll('id="skiff-', `id="${idScope}`)
+        .replaceAll('href="#skiff-', `href="#${idScope}`);
     let palette = options.palette ?? 'blue';
     let name = 'idle', faceOverride = null, pulse = 'none';
     let state = null, mood = 'neutral';
     let enabled = true, destroyed = false, running = false, handle = 0, origin = null;
     let lastSeconds = 0, poseStart = 0;
     let transition = null;
+    let sequence = null;
     const win = container.ownerDocument.defaultView;
     const reduced = options.reducedMotion === undefined || options.reducedMotion === 'auto'
         ? Boolean(win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
@@ -332,16 +435,27 @@ export function createSkiff(container, options = {}) {
         }
         return sampleTransition(transition.from, target, progress);
     };
+    const playbackAt = (time) => {
+        if (!sequence)
+            return null;
+        const target = sequence.pausedAt ?? time;
+        return sampleSequence(sequence.name, (target - sequence.started - sequence.pauseTotal) * 1000, hasMotion());
+    };
     const draw = (time = lastSeconds) => {
         if (destroyed)
             return;
         lastSeconds = Number.isFinite(time) ? Math.max(0, time) : 0;
+        const scene = playbackAt(lastSeconds);
+        if (scene) {
+            container.innerHTML = scopedSvg({ ...scene, palette });
+            return;
+        }
         const pose = poseAt(lastSeconds);
         const presentation = state === null ? null : semanticPresentation(state, mood);
-        const critical = state !== null && ['connection-interrupted', 'warning', 'error', 'sleeping'].includes(state);
+        const critical = state !== null && criticalState(state);
         const shownFace = critical ? presentation.face : faceOverride ?? (pose.face === 'blink' ? 'blink' : presentation?.face ?? pose.face);
         const visual = { ...pose, face: shownFace };
-        container.innerHTML = renderSvg({ pose: visual, palette, pulse: hasMotion() ? pulse : 'none', phase: lastSeconds });
+        container.innerHTML = scopedSvg({ pose: visual, palette, pulse: hasMotion() ? pulse : 'none', phase: lastSeconds });
     };
     const loop = (now) => {
         if (!running || destroyed)
@@ -373,6 +487,7 @@ export function createSkiff(container, options = {}) {
         // Switching to a manual pose intentionally exits semantic state control.
         const leavingState = state !== null;
         state = null;
+        sequence = null;
         if (leavingState)
             pulse = 'none';
         changePose(next, settings);
@@ -383,6 +498,11 @@ export function createSkiff(container, options = {}) {
         setPose(next) { transitionTo(next); },
         transitionTo,
         replay() {
+            if (sequence) {
+                sequence = { name: sequence.name, started: lastSeconds, pausedAt: null, pauseTotal: 0 };
+                draw();
+                return;
+            }
             const from = poses.idle;
             poseStart = lastSeconds;
             transition = hasMotion() ? { from, start: lastSeconds, duration: .42 } : null;
@@ -390,12 +510,52 @@ export function createSkiff(container, options = {}) {
         },
         setState(next) {
             const preset = semanticPresentation(next, mood); // validate before changing state
+            sequence = null;
             state = next;
             faceOverride = null;
             pulse = preset.pulse;
             changePose(preset.pose);
         },
         getState() { return state; },
+        play(next) {
+            sequenceDuration(next);
+            sequence = { name: next, started: lastSeconds, pausedAt: null, pauseTotal: 0 };
+            transition = null;
+            state = null;
+            faceOverride = null;
+            draw();
+            start();
+        },
+        pause() { if (sequence && sequence.pausedAt === null) {
+            sequence.pausedAt = lastSeconds;
+            draw();
+        } },
+        resume() {
+            if (sequence && sequence.pausedAt !== null) {
+                sequence.pauseTotal += lastSeconds - sequence.pausedAt;
+                sequence.pausedAt = null;
+                draw();
+                start();
+            }
+        },
+        seekSequence(elapsedMs) {
+            if (!sequence)
+                throw new Error('No active sequence');
+            if (!Number.isFinite(elapsedMs))
+                throw new RangeError('Invalid sequence time');
+            const clamped = Math.max(0, Math.min(sequenceDuration(sequence.name), elapsedMs));
+            const anchor = sequence.pausedAt ?? lastSeconds;
+            sequence.started = anchor - sequence.pauseTotal - clamped / 1000;
+            draw();
+        },
+        stopSequence() { sequence = null; state = null; pulse = 'none'; changePose('idle'); },
+        getPlayback() {
+            const frame = playbackAt(lastSeconds);
+            return frame ? { name: frame.name, state: frame.state, label: frame.label,
+                stepIndex: frame.stepIndex, elapsedMs: frame.elapsedMs,
+                durationMs: frame.durationMs, finished: frame.finished,
+                paused: sequence?.pausedAt !== null } : null;
+        },
         setMood(next) {
             if (!Object.hasOwn(moodFaces, next))
                 throw new Error('Unknown Skiff mood');
@@ -426,5 +586,106 @@ export function createSkiff(container, options = {}) {
         },
         renderAt(seconds) { draw(seconds); },
         destroy() { destroyed = true; stop(); container.innerHTML = ''; }
+    };
+}
+
+/** Narrow semantic integration boundary for host-welcome and other Zog interfaces.
+ * The application remains authoritative for factual status and accessibility. */
+
+/** No low-level SVG/limb controls escape this application-facing API. */
+export function createSkiffPresenter(container, options = {}) {
+    const win = container.ownerDocument.defaultView;
+    const reduced = options.reducedMotion === true ||
+        (options.reducedMotion !== false && !!win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    const engine = createSkiff(container, options);
+    let destroyed = false;
+    let task = null;
+    let watcher = 0;
+    const listeners = new Set();
+    const ensureLive = () => { if (destroyed)
+        throw new Error('Skiff presenter is destroyed'); };
+    const notify = (event) => {
+        for (const listener of [...listeners]) {
+            try {
+                listener(event);
+            }
+            catch { /* Consumer callbacks cannot break the renderer or settlement. */ }
+        }
+    };
+    const clearWatcher = () => { if (watcher && win)
+        win.cancelAnimationFrame(watcher); watcher = 0; };
+    const cancel = (reason) => {
+        if (!task)
+            return;
+        const previous = task;
+        task = null;
+        clearWatcher();
+        const result = { name: previous.name, status: 'cancelled', reason };
+        previous.resolve(result);
+        notify({ type: 'sequence-cancelled', name: previous.name, reason });
+    };
+    const complete = () => {
+        if (!task)
+            return;
+        const previous = task;
+        task = null;
+        clearWatcher();
+        previous.resolve({ name: previous.name, status: 'completed' });
+        notify({ type: 'sequence-completed', name: previous.name });
+    };
+    const observe = () => {
+        watcher = 0;
+        if (destroyed || !task)
+            return;
+        if (engine.getPlayback()?.finished) {
+            complete();
+            return;
+        }
+        watcher = win?.requestAnimationFrame(observe) ?? 0;
+    };
+    return {
+        setState(next) {
+            ensureLive();
+            semanticPresentation(next); // validate before interrupting a valid sequence
+            cancel('state-change');
+            engine.setState(next);
+            notify({ type: 'state-changed', state: next });
+        },
+        setMood(next) { ensureLive(); engine.setMood(next); },
+        getState() { ensureLive(); return engine.getPlayback()?.state ?? engine.getState(); },
+        playSequence(name) {
+            ensureLive();
+            sequenceDuration(name); // fail closed on unknown choreography
+            cancel('superseded');
+            if (reduced || !win?.requestAnimationFrame) {
+                // No ongoing loop or hanging completion promise in reduced-motion mode.
+                // Display the final, factual state as a still frame.
+                const finalState = skiffSequences[name].at(-1).state;
+                engine.setState(finalState);
+                notify({ type: 'state-changed', state: finalState });
+                notify({ type: 'sequence-completed', name });
+                return Promise.resolve({ name, status: 'completed' });
+            }
+            engine.play(name);
+            return new Promise(resolve => {
+                task = { name, resolve };
+                watcher = win.requestAnimationFrame(observe);
+            });
+        },
+        stop() { ensureLive(); cancel('stopped'); engine.stopSequence(); },
+        subscribe(callback) {
+            ensureLive();
+            listeners.add(callback);
+            return () => { listeners.delete(callback); };
+        },
+        destroy() {
+            if (destroyed)
+                return;
+            cancel('destroyed');
+            destroyed = true;
+            clearWatcher();
+            engine.destroy();
+            listeners.clear();
+        }
     };
 }
