@@ -144,7 +144,7 @@ class Phase2Tests(unittest.TestCase):
         with patch("host_welcome.progress_live.read_controller_policy",
                    return_value={"consumer_uid":12345,"controller_owner_uid":23456}), \
              patch("host_welcome.progress_live._welcome_uid", return_value=12345), \
-             patch("host_welcome.progress_live.os.geteuid", return_value=99999):
+             patch("host_welcome.progress_live.os.geteuid", return_value=99999, create=True):
             with self.assertRaises(live.LiveProgressUnavailable):
                 live.request_controller(BOOT)
 
@@ -218,7 +218,7 @@ class Phase2Tests(unittest.TestCase):
              patch("host_welcome.progress_live.read_controller_policy",
                    return_value={"consumer_uid": 12041, "controller_owner_uid": 11021}), \
              patch("host_welcome.progress_live._welcome_uid", return_value=12041), \
-             patch("host_welcome.progress_live.os.geteuid", return_value=12041):
+             patch("host_welcome.progress_live.os.geteuid", return_value=12041, create=True):
             snapshot = live.request_controller(BOOT)
         self.assertEqual(snapshot["boot_id"], BOOT)
         self.assertEqual(captured, [
