@@ -10,12 +10,12 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
-import pwd
 import re
 import stat
 
 from .progress import ProgressAssessment, ProgressLine, _controller, _date, _fresh
 
+REVIEWED_BOX_CONTROL_COMMIT = "8249715708c6ef8a1fd30a3fb529b4034ffffe25"
 POLICY = Path("/etc/zog/host-welcome-progress-observer.json")
 CONTROLLER_SOCKET = "/run/host-welcome/controller-progress.sock"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
@@ -34,6 +34,34 @@ def _no_duplicates(pairs):
             raise ValueError("duplicate protected policy member")
         result[key] = value
     return result
+
+
+def _welcome_uid() -> int:
+    """Resolve the actual dedicated Linux service UID only on the live path.
+
+    Keeping pwd out of module imports allows simulation and console-preview
+    commands to run on Windows without adding POSIX dependencies.
+    """
+    import pwd
+    return pwd.getpwnam("host-welcome").pw_uid
+
+
+def _validate_policy(config: object) -> dict:
+    """Check the exact pinned contract; metadata is not loaded-code attestation."""
+    if (type(config) is not dict or set(config) != {
+            "schema", "enabled", "consumer_uid", "controller_owner_uid",
+            "socket", "box_control_source_commit"}
+            or config["schema"] != "zog-host-welcome-progress-observer-v1"
+            or config["enabled"] is not True
+            or config["socket"] != CONTROLLER_SOCKET
+            or type(config["consumer_uid"]) is not int
+            or type(config["controller_owner_uid"]) is not int
+            or not 1 <= config["consumer_uid"] < 2**31
+            or not 1 <= config["controller_owner_uid"] < 2**31
+            or config["consumer_uid"] == config["controller_owner_uid"]
+            or config["box_control_source_commit"] != REVIEWED_BOX_CONTROL_COMMIT):
+        raise LiveProgressUnavailable("invalid or unreviewed progress policy")
+    return config
 
 
 def read_controller_policy() -> dict:
@@ -62,21 +90,7 @@ def read_controller_policy() -> dict:
         if len(raw) > MAX_CONFIG:
             raise LiveProgressUnavailable("overlong progress policy")
         config = json.loads(raw, object_pairs_hook=_no_duplicates)
-        if (type(config) is not dict or set(config) != {
-                "schema", "enabled", "consumer_uid", "controller_owner_uid",
-                "socket", "box_control_source_commit"}
-                or config["schema"] != "zog-host-welcome-progress-observer-v1"
-                or config["enabled"] is not True
-                or config["socket"] != CONTROLLER_SOCKET
-                or type(config["consumer_uid"]) is not int
-                or type(config["controller_owner_uid"]) is not int
-                or not 1 <= config["consumer_uid"] < 2**31
-                or not 1 <= config["controller_owner_uid"] < 2**31
-                or config["consumer_uid"] == config["controller_owner_uid"]
-                or type(config["box_control_source_commit"]) is not str
-                or not HEX40.fullmatch(config["box_control_source_commit"])):
-            raise LiveProgressUnavailable("invalid reviewed progress policy")
-        return config
+        return _validate_policy(config)
     except (OSError, ValueError, UnicodeError, TypeError) as exc:
         raise LiveProgressUnavailable("progress observer policy not installed or invalid") from exc
 
@@ -104,7 +118,7 @@ def request_controller(expected_boot: str) -> dict:
     """Controller progress is optional until a distinct observer is deployed."""
     config = read_controller_policy()
     try:
-        account_uid = pwd.getpwnam("host-welcome").pw_uid
+        account_uid = _welcome_uid()
         if not (os.geteuid() == account_uid == config["consumer_uid"]):
             raise LiveProgressUnavailable("wrong dedicated console observer UID")
         # The deployment owner separately verifies that the loaded package bytes

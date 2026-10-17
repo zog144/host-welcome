@@ -28,7 +28,7 @@ closed.
 
 The fixed root-owned policy has exact schema zog-host-welcome-progress-observer-v1,
 enabled=true, consumer_uid, controller_owner_uid, socket (must equal exact fixed
-path), and box_control_source_commit (reviewed full lowercase Git SHA). It
+path), and box_control_source_commit (pinned exact reviewed revision \u00608249715708c6ef8a1fd30a3fb529b4034ffffe25\u0060). It
 rejects symlinked policy files, group/other-write permissions, unowned policy
 and duplicate/missing/unknown JSON fields; source actual installed bytes must
 be independently pinned by host-install or host-deploy before enabling. Policy
@@ -72,3 +72,11 @@ service commands, graphical handoffs, root operations or state writes.
    image-build publication and request intent joining, with source/revision
    conflict and stale observation tests, then safe bounded opt-in refresh
    separate from login/TTY control.
+
+## Source adoption: independent observer handoffs (2026-10-17)
+
+The [host-install dedicated observer profile](https://github.com/zog144/host-install/blob/unstable/docs/host-install/host-welcome-progress-observer.md) now stages the separate root-owned service, mode-0600 socket and strictly pinned policy, resolving unique numeric UIDs from the native account, protected controller project owner and root-control socket owner. Its installed-aggregate attestation checks nine security-critical modules against Git blobs, independent SHA-256 and root-controlled wheel RECORD under an approved interpreter with no PYTHONPATH. None of these source operations authorizes activation before native acceptance.
+
+The [box-control observer implementation handoff](https://github.com/zog144/know-file/blob/d52c4b76cb6daa991eb08cf6fad4a665b6c57a9b/host-welcome/handoffs/box-control-console-observer-implementation-2026-10-17.md) confirms the exact broker entry point, `--observer-role host-welcome`, controller-owner UID and distinct fixed listener. The host-welcome consumer now pins `8249715708c6ef8a1fd30a3fb529b4034ffffe25` in policy validation (only **source compatibility metadata**, not loaded-module attestation), uses the official `ApplicationProgressClient(..., controller_uid=..., timeout_seconds=12).snapshot(limit=4)` API, and keeps `pwd` Linux-only so standalone simulations still import on Windows.
+
+**Remaining gate:** host-deploy Work must observe the native systemd socket, peer-UID DAC/SELinux and broker checks, installed wheel byte attestation, reboot/getty isolation and correct controller ownership on a disposable host. Image-build must separately deliver authoritative attempt-to-job/publication evidence before app-specific progress can be claimed. An old policy source commit or station listener cannot silently satisfy this consumer.

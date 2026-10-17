@@ -143,9 +143,8 @@ class Phase2Tests(unittest.TestCase):
     def test_actual_controller_client_is_not_called_on_wrong_user(self):
         with patch("host_welcome.progress_live.read_controller_policy",
                    return_value={"consumer_uid":12345,"controller_owner_uid":23456}), \
-             patch("host_welcome.progress_live.pwd.getpwnam") as lookup, \
+             patch("host_welcome.progress_live._welcome_uid", return_value=12345), \
              patch("host_welcome.progress_live.os.geteuid", return_value=99999):
-            lookup.return_value.pw_uid = 12345
             with self.assertRaises(live.LiveProgressUnavailable):
                 live.request_controller(BOOT)
 
@@ -171,3 +170,73 @@ class Phase2Tests(unittest.TestCase):
             return controller()
         live.live_assessment(bootstrap_reader=boot, controller_reader=ctl)
         self.assertEqual(calls, ["bootstrap", ("controller", BOOT)])
+
+    def test_staged_policy_is_exact_revision_and_distinct_uids(self):
+        valid = {
+            "schema": "zog-host-welcome-progress-observer-v1", "enabled": True,
+            "consumer_uid": 12041, "controller_owner_uid": 11021,
+            "socket": live.CONTROLLER_SOCKET,
+            "box_control_source_commit": live.REVIEWED_BOX_CONTROL_COMMIT,
+        }
+        self.assertIs(live._validate_policy(valid), valid)
+        for name, value in (
+            ("box_control_source_commit", "03c847ec6adc55fd5e2268534d47b500d9f52ab9"),
+            ("box_control_source_commit", "0" * 40),
+            ("socket", "/run/zog-host-export/application-progress/application-progress.sock"),
+            ("consumer_uid", 11021), ("consumer_uid", 0),
+            ("controller_owner_uid", 0), ("enabled", False),
+        ):
+            with self.subTest(name=name, value=value):
+                changed = dict(valid, **{name:value})
+                with self.assertRaises(live.LiveProgressUnavailable):
+                    live._validate_policy(changed)
+        with self.assertRaises(live.LiveProgressUnavailable):
+            live._validate_policy(dict(valid, extra="arbitrary"))
+
+    def test_reviewed_box_control_client_invocation_and_frozen_role(self):
+        """Verify the actual peer-checked client constructor and snapshot call."""
+        import sys
+        import types
+        captured = []
+        mock_client_mod = types.ModuleType("zog.box_control.application_progress_client")
+        class Client:
+            def __init__(self, path, *, controller_uid, timeout_seconds):
+                captured.append(("client", path, controller_uid, timeout_seconds))
+            def snapshot(self, *, limit):
+                captured.append(("snapshot", limit))
+                return controller()
+        mock_client_mod.ApplicationProgressClient = Client
+        mock_zog = types.ModuleType("zog")
+        mock_zog.__path__ = []
+        mock_box = types.ModuleType("zog.box_control")
+        mock_box.__path__ = []
+        modules = {
+            "zog": mock_zog, "zog.box_control": mock_box,
+            "zog.box_control.application_progress_client": mock_client_mod,
+        }
+        with patch.dict(sys.modules, modules), \
+             patch("host_welcome.progress_live.read_controller_policy",
+                   return_value={"consumer_uid": 12041, "controller_owner_uid": 11021}), \
+             patch("host_welcome.progress_live._welcome_uid", return_value=12041), \
+             patch("host_welcome.progress_live.os.geteuid", return_value=12041):
+            snapshot = live.request_controller(BOOT)
+        self.assertEqual(snapshot["boot_id"], BOOT)
+        self.assertEqual(captured, [
+            ("client", "/run/host-welcome/controller-progress.sock", 11021, 12),
+            ("snapshot", 4),
+        ])
+
+    def test_simulation_import_requires_no_posix_pwd(self):
+        """A user can run the simulation CLI on Windows without Linux pwd."""
+        import builtins
+        import importlib
+        old_import = builtins.__import__
+        def guarded_import(name, *args, **kwargs):
+            if name == "pwd":
+                raise ImportError("pwd is not installed")
+            return old_import(name, *args, **kwargs)
+        with patch("builtins.__import__", side_effect=guarded_import):
+            importlib.reload(live)
+        self.assertIsNotNone(live.live_assessment)
+        self.assertEqual(live.REVIEWED_BOX_CONTROL_COMMIT,
+                         "8249715708c6ef8a1fd30a3fb529b4034ffffe25")

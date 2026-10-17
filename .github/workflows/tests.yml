@@ -82,6 +82,29 @@ jobs:
           host-welcome-progress --scenario headless
           host-welcome-progress --scenario unavailable
 
+  windows-console-tests:
+    name: Windows simulated console import
+    needs: skiff-assets
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v7
+        with:
+          name: canonical-skiff-assets
+          path: src/host_welcome/assets
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run source tests
+        run: python -m unittest discover -s tests -v
+      - name: Simulated progress remains cross-platform
+        run: |
+          host-welcome-progress --scenario building
+          host-welcome-progress --scenario headless
+          host-welcome-progress --scenario published --format json
+
   html-previews:
     name: Offline Windows HTML previews
     needs: skiff-assets
