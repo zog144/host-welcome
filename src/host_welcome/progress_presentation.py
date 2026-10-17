@@ -6,6 +6,7 @@ LABEL = {
     "verified": "VERIFIED", "pending": "PENDING", "failed": "FAILED",
     "unknown": "UNKNOWN", "requested": "REQUESTED", "not-requested": "NOT REQUESTED",
     "unobserved": "UNOBSERVED", "uncertain": "UNCERTAIN", "mixed": "MIXED",
+    "degraded": "DEGRADED",
 }
 
 
@@ -39,4 +40,32 @@ def render_progress_console(fixture: ProgressFixture, result: ProgressAssessment
         "A published browser is not proof of X11/Wayland, PAM login or a ready desktop.",
         "The console remains usable while optional applications are unavailable.",
     ])
+    return "\n".join(lines) + "\n"
+
+
+def render_live_console(result: ProgressAssessment) -> str:
+    """Accessible one-shot status; only protected reader calls this live."""
+    lines = [
+        "ZOG / APPLICATION PROGRESS",
+        "PROTECTED READ-ONLY OBSERVATION -- UNAVAILABLE PRODUCERS REMAIN UNKNOWN",
+        "No downloads, retries, application launch, login or host mutations.",
+        "",
+        "Headless installation: " + LABEL[result.headless],
+        "Optional graphical applications: " + LABEL[result.graphics_request],
+        "Software publication: " + LABEL[result.publication],
+        "Local login / graphical session: NOT VERIFIED",
+        "Controller observations: " + result.controller_availability.upper(),
+        "",
+    ]
+    if result.lines:
+        for row in result.lines:
+            lines.append(f"[{row.state.upper():<9}] {row.title}: {row.phase}")
+            lines.append("             " + row.description)
+    else:
+        lines.append("No verified controller build or runtime observations available.")
+        lines.append("This does not mean installation work was never requested.")
+    lines.append("")
+    lines.append("Notes:")
+    lines.extend(" - " + warning for warning in result.warnings)
+    lines.append("Console and getty remain independent of optional graphical software.")
     return "\n".join(lines) + "\n"
