@@ -21,7 +21,7 @@ HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 APP = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 TOKEN = re.compile(r"[A-Za-z0-9-]{1,200}\Z")
 ATTEMPT = re.compile(r"[a-z0-9-]+-[0-9a-f]{32}\Z")
-SAFE = re.compile(r"[a-zA-Z0-9_.-]{1,128}\Z")
+SAFE = re.compile(r"[a-zA-Z0-9:._-]{1,128}\Z")
 STATES = frozenset(("not-requested", "waiting", "running", "succeeded",
                     "blocked", "failed", "cancelled", "uncertain", "unknown"))
 CODES = frozenset(("selection-unobserved", "application-not-requested",
@@ -87,7 +87,7 @@ def validate_image_snapshot(raw, *, now=None, expected_boot=None):
     if (source["contract"] != PRODUCER_SOURCE or source["repository"] != "zog144/image-build"
             or source["revision"] != PRODUCER_PIN):
         raise ProgressError("image-build producer source not reviewed")
-    _token(raw["boot_id"], re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\Z"), "producer boot")
+    _token(raw["boot_id"], re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z"), "producer boot")
     _token(raw["snapshot_id"], HEX32, "snapshot")
     if expected_boot is not None and raw["boot_id"] != expected_boot:
         raise ProgressError("image-build producer boot does not match verified installation")
