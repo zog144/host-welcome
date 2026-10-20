@@ -198,7 +198,7 @@ def live_assessment(*, bootstrap_reader=None, controller_reader=None, image_read
     request, publication = "unknown", "unobserved"
     try:
         from .post_install import join_image_progress, validate_image_snapshot
-        producer = validate_image_snapshot(image_reader())
+        producer = validate_image_snapshot(image_reader(), expected_boot=boot)
         request, publication, linked, extra = join_image_progress(
             producer, controller if availability == "observed" else None)
         lines.extend(linked)
