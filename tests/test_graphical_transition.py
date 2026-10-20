@@ -31,7 +31,7 @@ def parts(browser="firefox-esr"):
             evidence_ref="runtime:graphical-"+str(i),progress=None,
             message_code="runtime-observed-active"))
     seat=LocalSeatEvidence(True,True,True,True,True,BOOT,
-                           im["items"][0]["selection_revision"],t)
+                           im["items"][0]["selection_revision"],t,"e"*64)
     return im,controller,seat
 
 class GateTests(unittest.TestCase):
@@ -51,7 +51,7 @@ class GateTests(unittest.TestCase):
     def test_remote_vnc_does_not_satisfy_physical_seat(self):
         im,controller,seat=parts()
         seat=LocalSeatEvidence(False,True,True,True,True,BOOT,
-                               seat.selection_revision,seat.observed_at)
+                               seat.selection_revision,seat.observed_at,seat.rootfs_generation)
         decision=evaluate_graphical_transition(im,controller,seat,accepted_boot=BOOT)
         self.assertFalse(decision.eligible)
         self.assertIn("physical seat", " ".join(decision.gates))
@@ -77,7 +77,8 @@ class GateTests(unittest.TestCase):
     def test_published_artifact_not_compatible_view(self):
         im,controller,seat=parts()
         im["items"][0]["publication"].update(message_code="artifact-published",
-                    view_id=None,binding_digest=None,compatibility_checked=False)
+                    view_id=None,binding_digest=None,compatibility_checked=False,
+                    rootfs_generation=None)
         result=evaluate_graphical_transition(im,controller,seat,accepted_boot=BOOT)
         self.assertFalse(result.eligible)
         self.assertIn("compatible immutable view", " ".join(result.gates))
@@ -113,3 +114,11 @@ class GateTests(unittest.TestCase):
         prior=copy.deepcopy((im,controller,seat))
         evaluate_graphical_transition(im,controller,seat,accepted_boot=BOOT)
         self.assertEqual((im,controller,seat),prior)
+
+    def test_seat_selected_generation_must_match_publisher(self):
+        im,controller,seat=parts()
+        changed=dict(vars(seat),rootfs_generation="f"*64)
+        result=evaluate_graphical_transition(im,controller,
+            LocalSeatEvidence(**changed),accepted_boot=BOOT)
+        self.assertFalse(result.eligible)
+        self.assertIn("rootfs generation", " ".join(result.gates))

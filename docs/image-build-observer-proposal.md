@@ -1,6 +1,6 @@
 # Draft image-build observer transport — source-only
 
-The image-build source projection `image-build-post-install-progress-v1` is implemented and reviewed in code at `857bb454e64102afa51a93ce0b9f8cce5924b67c`. The consumer can validate and join an authenticated producer page with the controller's independently peer-checked progress. Native observer staging and authority remain **unapproved**; the fixed path and root-owned policy below are a **proposal for host-install and image-build review**, not a deployed or finalized protocol.
+The image-build source projection `image-build-post-install-progress-v2` is implemented and reviewed in code at `fcc12f3db959afe395b1adfb5b0b4dc1f16a3258`. The consumer can validate and join an authenticated producer page with the controller's independently peer-checked progress. Native observer staging and authority remain **unapproved**; the fixed path and root-owned policy below are a **proposal for host-install and image-build review**, not a deployed or finalized protocol.
 
 - Proposed dedicated AF_UNIX socket: `/run/host-welcome/image-progress.sock` served by an independently non-root image-build producer UID.
 - Proposed root-owned policy: `/etc/zog/host-welcome-image-progress-observer.json` with exact schema `zog-host-welcome-image-progress-observer-v1`, `enabled`, distinct numeric `consumer_uid` and `producer_uid`, fixed `socket`, and pinned `image_build_source_commit`.

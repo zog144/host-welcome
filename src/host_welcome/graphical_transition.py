@@ -28,6 +28,7 @@ class LocalSeatEvidence:
     boot_id: str
     selection_revision: str
     observed_at: str
+    rootfs_generation: str
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,12 @@ def evaluate_graphical_transition(image, controller=None, local_seat=None,
             failed.append(name + ": compatible immutable view not proven")
     if image["page"]["has_more"]:
         failed.append("image-build listing incomplete")
+    generations = {
+        r["publication"]["rootfs_generation"] for r in rows.values()
+        if r["application"] in (*REQUIRED, browser)
+    }
+    if len(generations) != 1 or None in generations:
+        failed.append("published graphical views target differing or missing rootfs generations")
     revisions = {r["selection_revision"] for r in rows.values()}
     if len(revisions) != 1 or None in revisions:
         failed.append("selected application revision inconsistent")
@@ -105,5 +112,7 @@ def evaluate_graphical_transition(image, controller=None, local_seat=None,
             failed.append("local seat is not on the accepted boot")
         if len(revisions) != 1 or local_seat.selection_revision not in revisions:
             failed.append("local seat selection revision conflicts with image-build")
+        if len(generations) != 1 or local_seat.rootfs_generation not in generations:
+            failed.append("local seat rootfs generation conflicts with published views")
     # No GUI execution or TTY takeover, even when a test supplies all gates.
     return TransitionDecision(not failed, True, tuple(dict.fromkeys(failed)))

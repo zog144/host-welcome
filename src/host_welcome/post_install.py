@@ -11,7 +11,9 @@ import re
 
 from .progress import ProgressError, ProgressLine, _controller, _date, _fresh
 
-SCHEMA = "image-build-post-install-progress-v1"
+SCHEMA = "image-build-post-install-progress-v2"
+PRODUCER_PIN = "fcc12f3db959afe395b1adfb5b0b4dc1f16a3258"
+PRODUCER_SOURCE = "image-build-post-install-source-v1"
 WIRE = "image-build-post-install-progress-rpc-v1"
 REV = re.compile(r"sha256:[0-9a-f]{64}\Z")
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
@@ -48,7 +50,7 @@ FIELDS = frozenset(("application", "producer", "selection_owner", "selection_rev
     "publication", "runtime_admission", "phase", "state", "message_code",
     "progress", "observed_at"))
 PUBLICATION = frozenset(("state", "message_code", "artifact_id", "view_id", "receipt",
-                         "compatibility_checked", "binding_digest",
+                         "compatibility_checked", "rootfs_generation", "binding_digest",
                          "artifact_revision", "artifact_source_identity"))
 COMMAND = frozenset(("attempt_id", "stage_id", "package", "phase", "command_index",
     "controller_request_id", "build_job_id", "recipe_identity", "source_pin_identity",
@@ -73,14 +75,22 @@ def _value(item, values, label):
         raise ProgressError(label + ": unsupported value")
 
 
-def validate_image_snapshot(raw, *, now=None):
+def validate_image_snapshot(raw, *, now=None, expected_boot=None):
     """Validate exactly one bounded producer page, without granting host authority."""
     _shape(raw, frozenset(("schema", "snapshot_id", "observed_at", "producer",
-                          "selection_owner", "items", "page")), "image-build")
+                          "producer_source", "boot_id", "selection_owner", "items", "page")), "image-build")
     if (raw["schema"] != SCHEMA or raw["producer"] != "image-build"
             or raw["selection_owner"] != "host-install"):
         raise ProgressError("invalid image-build producer/selection authority")
+    source = _shape(raw["producer_source"],
+        frozenset(("contract", "repository", "revision")), "producer source")
+    if (source["contract"] != PRODUCER_SOURCE or source["repository"] != "zog144/image-build"
+            or source["revision"] != PRODUCER_PIN):
+        raise ProgressError("image-build producer source not reviewed")
+    _token(raw["boot_id"], re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\Z"), "producer boot")
     _token(raw["snapshot_id"], HEX32, "snapshot")
+    if expected_boot is not None and raw["boot_id"] != expected_boot:
+        raise ProgressError("image-build producer boot does not match verified installation")
     stamp = _date(raw["observed_at"], "image-build observation")
     now = datetime.now(timezone.utc) if now is None else now
     if now.tzinfo is None or now.utcoffset() is None or not _fresh(
@@ -174,12 +184,13 @@ def validate_image_snapshot(raw, *, now=None):
             _token(pub[key], REV, key, nullable=True)
         if pub["artifact_revision"] is not None:
             _token(pub["artifact_revision"], SAFE, "artifact revision")
+        _token(pub["rootfs_generation"], HEX64, "published rootfs generation", nullable=True)
         if type(pub["compatibility_checked"]) is not bool:
             raise ProgressError("publication compatibility flag")
         code = pub["message_code"]
         if code == "publication-unobserved" or code == "publication-evidence-conflict":
             if (pub["state"] != "unknown" or any(pub[k] is not None for k in
-                 ("artifact_id", "view_id", "receipt", "binding_digest",
+                 ("artifact_id", "view_id", "receipt", "binding_digest", "rootfs_generation",
                   "artifact_revision", "artifact_source_identity"))
                     or pub["compatibility_checked"]):
                 raise ProgressError("invalid unknown publication")
@@ -190,15 +201,18 @@ def validate_image_snapshot(raw, *, now=None):
                 raise ProgressError("publication lacks owner artifact receipt")
             if code == "artifact-published":
                 if (pub["state"] != "succeeded" or pub["view_id"] is not None
-                        or pub["binding_digest"] is not None or pub["compatibility_checked"]):
+                        or pub["binding_digest"] is not None or pub["rootfs_generation"] is not None
+                        or pub["compatibility_checked"]):
                     raise ProgressError("artifact-only publication invalid")
             elif code == "view-published-compatibility-unchecked":
                 if (pub["state"] != "uncertain" or pub["view_id"] is None
-                        or pub["compatibility_checked"] or pub["binding_digest"] is not None):
+                        or pub["compatibility_checked"] or pub["binding_digest"] is not None
+                        or pub["rootfs_generation"] is not None):
                     raise ProgressError("unverified view compatibility")
             elif code == "view-published-compatible":
                 if (pub["state"] != "succeeded" or pub["view_id"] is None
-                        or not pub["compatibility_checked"] or pub["binding_digest"] is None):
+                        or not pub["compatibility_checked"] or pub["binding_digest"] is None
+                        or pub["rootfs_generation"] is None):
                     raise ProgressError("missing verified rootfs binding")
         # Image-build can independently publish even after build-job retention expires.
         # Never let producer publication be silently replaced with controller success.
