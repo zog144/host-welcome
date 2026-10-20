@@ -60,6 +60,15 @@ class PinnedImageBuildExamples(unittest.TestCase):
                     validate_image_snapshot(raw, expected_boot=BOOT))[1],
                     "unobserved")
 
+    def test_pipeline_running_is_not_live_job_proof(self):
+        raw = example("in-progress")
+        validated = validate_image_snapshot(raw, expected_boot=BOOT)
+        _, publication, lines, warnings = join_image_progress(validated)
+        self.assertEqual(publication, "unobserved")
+        self.assertEqual(lines[0].phase, "building")
+        self.assertEqual(lines[0].state, "uncertain")
+        self.assertTrue(any("not independently verified" in x for x in warnings))
+
     def test_mismatched_rootfs_and_source_fail_closed(self):
         raw=example("published")
         raw["items"][0]["publication"]["rootfs_generation"]="../old"

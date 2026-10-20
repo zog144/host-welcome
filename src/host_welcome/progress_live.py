@@ -192,9 +192,10 @@ def live_assessment(*, bootstrap_reader=None, controller_reader=None, image_read
         lines = []
         availability = "unavailable"
         warnings.append("Authenticated controller progress unavailable or not authorized for host-welcome.")
-    # Image-build's independently peer-checked owner projection is not boot-
-    # bound. The protected client validates the actual producer UID, fixed
-    # socket and a fresh response. Do not infer physical-seat readiness.
+    # Image-build's independently peer-checked v2 projection is bound to the
+    # current accepted bootstrap boot. The protected reader validates the
+    # producer UID, source revision, fixed socket and fresh response. Do not
+    # infer physical-seat readiness or equate a saved pipeline with live work.
     request, publication = "unknown", "unobserved"
     try:
         from .post_install import join_image_progress, validate_image_snapshot

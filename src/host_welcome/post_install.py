@@ -1,4 +1,4 @@
-"""Strict consumer of image-build's post-install-progress-v1 producer projection.
+"""Strict consumer of image-build's post-install-progress-v2 producer projection.
 
 Pure schema validation and display-only joining. This module is NOT an
 authenticated transport; callers must only supply a snapshot obtained through
@@ -298,6 +298,13 @@ def join_image_progress(snapshot, controller=None):
         if contradictory:
             state = "uncertain"
             warning.append(name + ": controller execution evidence conflicts with image-build command.")
+        if state == "running":
+            # A persisted pipeline phase (including a producer-side "running"
+            # status) does not itself prove current kernel execution. The
+            # command/controller result may be absent, pruned or on a prior
+            # boot; keep the build phase visible without asserting a live job.
+            state = "uncertain"
+            warning.append(name + ": pipeline marked running; current execution not independently verified.")
         if item["commands_truncated"]:
             warning.append(name + ": command evidence was truncated; history is incomplete.")
         lines.append(ProgressLine(name, phase, state, desc))
