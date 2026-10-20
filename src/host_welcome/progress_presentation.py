@@ -6,7 +6,8 @@ LABEL = {
     "verified": "VERIFIED", "pending": "PENDING", "failed": "FAILED",
     "unknown": "UNKNOWN", "requested": "REQUESTED", "not-requested": "NOT REQUESTED",
     "unobserved": "UNOBSERVED", "uncertain": "UNCERTAIN", "mixed": "MIXED",
-    "degraded": "DEGRADED",
+    "degraded": "DEGRADED", "compatible": "COMPATIBLE VIEW (NOT RUNNING)",
+    "partial": "PARTIAL (NOT READY)",
 }
 
 

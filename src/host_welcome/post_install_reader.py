@@ -90,7 +90,7 @@ def request_image_progress(*, policy_reader=None):
     try:
         policy = validate_image_policy(policy_reader())
         from .progress_live import _welcome_uid
-        if not hasattr(os, "geteuid") or os.geteuid() != _welcome_uid() != policy["consumer_uid"]:
+        if not hasattr(os, "geteuid") or not (os.geteuid() == _welcome_uid() == policy["consumer_uid"]):
             raise LiveProgressUnavailable("wrong dedicated image-progress consumer UID")
         if not hasattr(socket, "SO_PEERCRED"):
             raise LiveProgressUnavailable("kernel peer credentials unavailable")

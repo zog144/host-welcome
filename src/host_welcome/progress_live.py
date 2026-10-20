@@ -141,10 +141,13 @@ def request_controller(expected_boot: str) -> dict:
         raise LiveProgressUnavailable("authenticated controller observation unavailable") from exc
 
 
-def live_assessment(*, bootstrap_reader=None, controller_reader=None) -> ProgressAssessment:
+def live_assessment(*, bootstrap_reader=None, controller_reader=None, image_reader=None) -> ProgressAssessment:
     """One bounded observation. Injectable readers are for source tests only."""
     bootstrap_reader = bootstrap_reader or request_bootstrap
     controller_reader = controller_reader or request_controller
+    if image_reader is None:
+        from .post_install_reader import request_image_progress
+        image_reader = request_image_progress
     warnings = []
     try:
         bootstrap = bootstrap_reader()
@@ -189,6 +192,22 @@ def live_assessment(*, bootstrap_reader=None, controller_reader=None) -> Progres
         lines = []
         availability = "unavailable"
         warnings.append("Authenticated controller progress unavailable or not authorized for host-welcome.")
-    warnings.append("Image-build application request intent and publication not independently observed.")
-    return ProgressAssessment(headless, "unknown", "unobserved", "not-verified",
+    # Image-build's independently peer-checked owner projection is not boot-
+    # bound. The protected client validates the actual producer UID, fixed
+    # socket and a fresh response. Do not infer physical-seat readiness.
+    request, publication = "unknown", "unobserved"
+    try:
+        from .post_install import join_image_progress, validate_image_snapshot
+        producer = validate_image_snapshot(image_reader())
+        request, publication, linked, extra = join_image_progress(
+            producer, controller if availability == "observed" else None)
+        lines.extend(linked)
+        warnings.extend(extra)
+        if producer["page"]["has_more"]:
+            warnings.append("Image-build listing is incomplete; more application pages exist.")
+    except Exception:
+        warnings.append("Authenticated image-build publication and selection unavailable.")
+    if publication == "unobserved":
+        warnings.append("No verified selected-application publication can be concluded.")
+    return ProgressAssessment(headless, request, publication, "not-verified",
                               availability, tuple(lines), tuple(warnings))

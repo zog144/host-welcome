@@ -14,7 +14,6 @@ def policy():
 
 class ImageReaderTests(unittest.TestCase):
     def test_exact_owner_contract_and_no_station_socket(self):
-        self.assertIs(reader.validate_image_policy(policy()), policy()) if False else None
         self.assertEqual(reader.validate_image_policy(policy())["producer_uid"], 11051)
         for key, val in (("consumer_uid", 0), ("producer_uid", 0),
                          ("producer_uid", 10021), ("enabled", False),
