@@ -138,7 +138,9 @@ class ImageProducerTests(unittest.TestCase):
             package="firefox",phase="build",command_index=0,
             controller_request_id="req-123",build_job_id="c"*32,
             recipe_identity="e"*64,source_pin_identity="a"*64,
-            state="uncertain",message_code="command-observation-missing",progress=None)
+            state="uncertain",message_code="command-observation-missing",progress=None,
+            trace_identity=None,build_record=None,controller_observed_at=None,
+            controller_boot_id=None)
         row["commands"]=[command]
         validated=validate_image_snapshot(data)
         self.assertEqual(validated["items"][0]["commands"][0]["build_job_id"],"c"*32)
