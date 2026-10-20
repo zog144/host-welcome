@@ -30,7 +30,7 @@ CODES = frozenset(("selection-unobserved", "application-not-requested",
     "pipeline-released", "pipeline-state-unknown", "command-awaiting-controller-request",
     "command-observation-missing", "command-running-unobserved", "command-succeeded",
     "command-failed", "command-cancelled", "command-outcome-uncertain",
-    "command-evidence-conflict", "publication-unobserved", "artifact-published",
+    "command-evidence-conflict", "command-provenance-unobserved", "publication-unobserved", "artifact-published",
     "view-published-compatibility-unchecked", "view-published-compatible",
     "publication-evidence-conflict"))
 PUB_CODES = frozenset(("publication-unobserved", "artifact-published",
@@ -39,7 +39,7 @@ PUB_CODES = frozenset(("publication-unobserved", "artifact-published",
 COMMAND_CODES = frozenset(("command-awaiting-controller-request",
     "command-observation-missing", "command-running-unobserved", "command-succeeded",
     "command-failed", "command-cancelled", "command-outcome-uncertain",
-    "command-evidence-conflict"))
+    "command-evidence-conflict", "command-provenance-unobserved"))
 PHASES = frozenset(("intent", "queued", "building", "publishing"))
 COMMAND_PHASES = frozenset(("prepare", "configure", "build", "test", "install"))
 GRAPHICAL = frozenset(("firefox", "firefox-esr", "chromium", "greetd", "agreety",
@@ -54,7 +54,8 @@ PUBLICATION = frozenset(("state", "message_code", "artifact_id", "view_id", "rec
                          "artifact_revision", "artifact_source_identity"))
 COMMAND = frozenset(("attempt_id", "stage_id", "package", "phase", "command_index",
     "controller_request_id", "build_job_id", "recipe_identity", "source_pin_identity",
-    "state", "message_code", "progress"))
+    "trace_identity", "build_record", "controller_observed_at",
+    "controller_boot_id", "state", "message_code", "progress"))
 
 
 def _shape(obj, fields, label):
@@ -172,6 +173,27 @@ def validate_image_snapshot(raw, *, now=None, expected_boot=None):
             _value(cmd["message_code"], COMMAND_CODES, "command message")
             if cmd["progress"] is not None or type(cmd["command_index"]) is not int or cmd["command_index"] < 0:
                 raise ProgressError("unsupported command progress/index")
+            _token(cmd["trace_identity"], REV, "immutable build trace", nullable=True)
+            record = cmd["build_record"]
+            if record is not None:
+                _shape(record, frozenset(("prepared", "inputs", "result", "output")),
+                       "build-record identities")
+                for ref in record.values():
+                    _token(ref, REV, "build-record identity", nullable=True)
+            observed_at = cmd["controller_observed_at"]
+            boot = cmd["controller_boot_id"]
+            if observed_at is not None:
+                _date(observed_at, "retained controller command observation")
+            _token(boot, re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z"),
+                   "retained controller command boot", nullable=True)
+            if (observed_at is None) != (boot is None):
+                raise ProgressError("incomplete retained controller command observation")
+            if cmd["state"] == "succeeded" and (
+                    cmd["message_code"] != "command-succeeded"
+                    or cmd["trace_identity"] is None or record is None
+                    or observed_at is None or boot is None):
+                raise ProgressError("terminal success needs immutable provenance")
+
             key = (cmd["attempt_id"], cmd["stage_id"], cmd["package"],
                    cmd["phase"], cmd["command_index"])
             if key in ids:
