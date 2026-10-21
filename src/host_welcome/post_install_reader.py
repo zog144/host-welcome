@@ -19,7 +19,7 @@ from .progress_live import LiveProgressUnavailable, _no_duplicates
 
 IMAGE_POLICY = Path("/etc/zog/host-welcome-image-progress-observer.json")
 IMAGE_SOCKET = "/run/host-welcome/image-progress.sock"
-IMAGE_BUILD_COMMIT = "fcc12f3db959afe395b1adfb5b0b4dc1f16a3258"
+IMAGE_BUILD_COMMIT = "7348ec730a3181f1a8ecc62a6e4d633ce191674a"
 POLICY_SCHEMA = "zog-host-welcome-image-progress-observer-v1"
 MAX_CONFIG = 2048
 MAX_FRAME = 65536
@@ -73,6 +73,10 @@ def read_image_policy():
         raise LiveProgressUnavailable("image-build observer policy missing or invalid") from exc
 
 
+UCREDS_SIZE = struct.calcsize("3i")
+TRANSPORT_AUTH = "image-build-post-install-progress-linux-credentials-v1"
+
+
 def _exact(conn, count):
     parts = []
     while count:
@@ -84,29 +88,61 @@ def _exact(conn, count):
     return b"".join(parts)
 
 
+def _credentialed_header(conn, producer_uid):
+    """Authenticate the actual response sender via Linux kernel credentials.
+
+    The broker places one SCM_CREDENTIALS record on its first reply byte.
+    A systemd-created listening socket's SO_PEERCRED describes PID 1, *not*
+    the image-build responder. Only the ancillary record authenticates the
+    sender under the reviewed transport v1 contract.
+    """
+    if (not hasattr(conn, "recvmsg") or not hasattr(socket, "SO_PASSCRED")
+            or not hasattr(socket, "SCM_CREDENTIALS")
+            or not hasattr(socket, "CMSG_SPACE") or not hasattr(socket, "MSG_CTRUNC")):
+        raise LiveProgressUnavailable("Linux response credentials unavailable")
+    first, ancillary, flags, _address = conn.recvmsg(
+        4, socket.CMSG_SPACE(UCREDS_SIZE))
+    if (not 1 <= len(first) <= 4
+            or flags & (socket.MSG_CTRUNC | getattr(socket, "MSG_TRUNC", 0))):
+        raise LiveProgressUnavailable("missing or truncated producer identity")
+    if len(ancillary) != 1:
+        raise LiveProgressUnavailable("ambiguous producer identity")
+    level, kind, data = ancillary[0]
+    if (level != socket.SOL_SOCKET or kind != socket.SCM_CREDENTIALS
+            or len(data) != UCREDS_SIZE):
+        raise LiveProgressUnavailable("invalid producer credential record")
+    pid, uid, _gid = struct.unpack("3i", data)
+    if pid <= 0 or uid != producer_uid:
+        raise LiveProgressUnavailable("wrong image-build response sender")
+    return first + _exact(conn, 4 - len(first))
+
+
 def request_image_progress(*, policy_reader=None):
-    """One read from fixed reviewed broker; SO_PEERCRED before framing."""
+    """One fixed read-only RPC; authenticate responder before decoding."""
     policy_reader = policy_reader or read_image_policy
     try:
         policy = validate_image_policy(policy_reader())
         from .progress_live import _welcome_uid
-        if not hasattr(os, "geteuid") or not (os.geteuid() == _welcome_uid() == policy["consumer_uid"]):
+        if not hasattr(os, "geteuid") or not (
+                os.geteuid() == _welcome_uid() == policy["consumer_uid"]):
             raise LiveProgressUnavailable("wrong dedicated image-progress consumer UID")
-        if not hasattr(socket, "SO_PEERCRED"):
-            raise LiveProgressUnavailable("kernel peer credentials unavailable")
+        if (not hasattr(socket, "SO_PASSCRED") or not hasattr(socket, "SCM_CREDENTIALS")
+                or not hasattr(socket, "CMSG_SPACE")
+                or not hasattr(socket.socket, "recvmsg")
+                or not hasattr(socket, "MSG_CTRUNC")):
+            raise LiveProgressUnavailable("Linux credential-bearing replies required")
         payload = json.dumps({
             "schema": WIRE, "operation": "snapshot", "after": None, "limit": 4,
         }, separators=(",", ":")).encode("ascii")
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
             conn.settimeout(12)
+            conn.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
             conn.connect(IMAGE_SOCKET)
-            creds = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED,
-                                    struct.calcsize("3i"))
-            _pid, uid, _gid = struct.unpack("3i", creds)
-            if uid != policy["producer_uid"]:
-                raise LiveProgressUnavailable("wrong image-build producer peer")
+            # Fixed request is nonsecret and immutable. Only the genuine
+            # producer's kernel-credentialed reply can authorize any status.
             conn.sendall(struct.pack("!I", len(payload)) + payload)
-            count = struct.unpack("!I", _exact(conn, 4))[0]
+            count = struct.unpack("!I", _credentialed_header(
+                conn, policy["producer_uid"]))[0]
             if not 0 < count <= MAX_FRAME:
                 raise LiveProgressUnavailable("unbounded image-build reply")
             reply = json.loads(_exact(conn, count), object_pairs_hook=_no_duplicates)

@@ -12,7 +12,7 @@ import re
 from .progress import ProgressError, ProgressLine, _controller, _date, _fresh
 
 SCHEMA = "image-build-post-install-progress-v2"
-PRODUCER_PIN = "fcc12f3db959afe395b1adfb5b0b4dc1f16a3258"
+PRODUCER_PIN = "7348ec730a3181f1a8ecc62a6e4d633ce191674a"
 PRODUCER_SOURCE = "image-build-post-install-source-v1"
 WIRE = "image-build-post-install-progress-rpc-v2"
 REV = re.compile(r"sha256:[0-9a-f]{64}\Z")
