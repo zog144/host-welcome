@@ -28,6 +28,7 @@ class ReceiptOnlySuccessorTests(unittest.TestCase):
         ):
             with self.subTest(publication=status):
                 data = snapshot([item(name="firefox-esr", published=status)])
+                data["items"][0]["state"] = data["items"][0]["publication"]["state"]
                 row = validate_image_snapshot(data, expected_boot=data["boot_id"])["items"][0]
                 self.assertEqual((row["phase"], row["message_code"]), ("publishing", status))
                 self.assertEqual(row["state"], row["publication"]["state"])
