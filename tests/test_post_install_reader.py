@@ -24,8 +24,9 @@ LINUX_CREDS = (
             ("SCM_CREDENTIALS", "SO_PASSCRED", "CMSG_SPACE", "MSG_CTRUNC"))
     and hasattr(socket.socket, "recvmsg")
 )
-OLD_PIN = "fcc12f3db959afe395b1adfb5b0b4dc1f16a3258"
-NEW_PIN = "7348ec730a3181f1a8ecc62a6e4d633ce191674a"
+OLD_PIN = "7348ec730a3181f1a8ecc62a6e4d633ce191674a"
+OLDER_PIN = "fcc12f3db959afe395b1adfb5b0b4dc1f16a3258"
+NEW_PIN = "7b653e8be3f89730a52688d71df28513456f9cf3"
 
 
 def policy(consumer_uid=10021, producer_uid=11051):
@@ -66,6 +67,7 @@ class ImagePolicyTests(unittest.TestCase):
         for name, value in (("consumer_uid", 0), ("producer_uid", 0),
                             ("producer_uid", 10021), ("enabled", False),
                             ("image_build_source_commit", OLD_PIN),
+                            ("image_build_source_commit", OLDER_PIN),
                             ("image_build_source_commit", "0" * 40),
                             ("socket", "/run/zog-host-export/application-progress/application-progress.sock")):
             with self.subTest(name=name, value=value):

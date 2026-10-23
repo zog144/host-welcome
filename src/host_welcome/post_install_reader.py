@@ -19,7 +19,7 @@ from .progress_live import LiveProgressUnavailable, _no_duplicates
 
 IMAGE_POLICY = Path("/etc/zog/host-welcome-image-progress-observer.json")
 IMAGE_SOCKET = "/run/host-welcome/image-progress.sock"
-IMAGE_BUILD_COMMIT = "7348ec730a3181f1a8ecc62a6e4d633ce191674a"
+IMAGE_BUILD_COMMIT = "7b653e8be3f89730a52688d71df28513456f9cf3"
 POLICY_SCHEMA = "zog-host-welcome-image-progress-observer-v1"
 MAX_CONFIG = 2048
 MAX_FRAME = 65536
